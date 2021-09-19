@@ -21,7 +21,7 @@ app.post('/', (req, res) => {
     '204.232.175.75',
     '108.171.174.178'
   ]
-  const payload = JSON.parse(req.body.payload)
+  const payload = JSON.parse(req.body)
 
   if (!payload) {
     console.log('No payload')
@@ -37,14 +37,17 @@ app.post('/', (req, res) => {
     res.end()
     return
   }
-  if (!payload.ref) {
-    res.writeHead(200)
-    res.end()
-    return
-  }
-  const scriptPath = `./scripts/${payload.repository.name}-${payload.ref.split('/').pop()}.sh`
+  const scriptPath = `./scripts/${payload.repository.name}-main.sh`
+
+  if (!fs.existsSync(scriptPath)) return res.status(404).end()
+
   console.log(`Executing task at: ${scriptPath}`)
-  myExec(scriptPath)
+
+  try {
+    myExec(scriptPath)
+  } catch (e) {
+    return res.status(500).send(e)
+  }
 
   res.writeHead(200)
   res.end()
@@ -55,12 +58,12 @@ http.createServer(app).listen(app.get('port'), function () {
 })
 
 function myExec(line) {
-  if (!fs.existsSync(line)) return
+  if (!fs.existsSync(line)) throw Error('This script doesn\'t exists')
   
   const exec = require('child_process').exec
   const execCallback = (error) => {
     if (error !== null) {
-      console.log('exec error: ' + error)
+      throw error
     }
   }
   exec(line, execCallback)
