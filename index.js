@@ -53,10 +53,14 @@ app.post('/', async (req, res) => {
   });
 
   let cwd = ''
+  let isSecondLine = false;
 
   for await (const line of rl) {
-    cwd = line.substring(1).replace(/ /g, '');
-    break;
+    if (isSecondLine) {
+      cwd = line.substring(1).replace(/ /g, '');
+      break;
+    }
+    isSecondLine = true;
   }
 
   console.log(`Executing task at: ${scriptPath}`)
