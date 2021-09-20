@@ -60,9 +60,7 @@ http.createServer(app).listen(app.get('port'), function () {
   console.log('CI Ninja server listening on port ' + app.get('port'))
 })
 
-function myExec(line) {
-  if (!fs.existsSync(line)) throw Error('This script doesn\'t exists')
-  
+function myExec(line) {  
   const exec = require('child_process').exec
   const execCallback = (error) => {
     if (error !== null) {
