@@ -5,6 +5,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const Netmask = require('netmask').Netmask
 const fs = require('fs')
+const { join } = require('path')
 
 app.set('port', 61439)
 app.use(bodyParser.json())
@@ -21,7 +22,7 @@ app.post('/', (req, res) => {
     '204.232.175.75',
     '108.171.174.178'
   ]
-  const payload = JSON.parse(req.body)
+  const payload = req.body
 
   if (!payload) {
     console.log('No payload')
@@ -38,13 +39,14 @@ app.post('/', (req, res) => {
     return
   }
   const scriptPath = `./scripts/${payload.repository.name}-main.sh`
+  const fullPath = join(__dirname, scriptPath)
 
-  if (!fs.existsSync(scriptPath)) return res.status(404).end()
+  if (!fs.existsSync(fullPath)) return res.status(404).end()
 
   console.log(`Executing task at: ${scriptPath}`)
 
   try {
-    myExec(scriptPath)
+    myExec(fullPath)
   } catch (e) {
     return res.status(500).send(e)
   }
@@ -66,7 +68,8 @@ function myExec(line) {
       throw error
     }
   }
-  exec(line, execCallback)
+  const proc = exec(line, execCallback)
+  proc.stdout.pipe(process.stdout)
 }
 
 function inAuthorizedSubnet(ip) {
