@@ -56,6 +56,8 @@ app.post('/', async (req, res) => {
     executionLine += line + ' && '
   }
 
+  executionLine = executionLine.slice(0, -3)
+
   console.log(`Executing task at: ${scriptPath}`)
   console.log(executionLine)
 
