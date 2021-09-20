@@ -39,14 +39,14 @@ app.post('/', (req, res) => {
     return
   }
   const scriptPath = `./scripts/${payload.repository.name}-main.sh`
-  const fullPath = join(__dirname, scriptPath)
+  const fullPath = `sh ${join(__dirname, scriptPath)}`
 
   if (!fs.existsSync(fullPath)) return res.status(404).end()
 
   console.log(`Executing task at: ${scriptPath}`)
 
   try {
-    myExec(scriptPath)
+    myExec(fullPath)
   } catch (e) {
     return res.status(500).send(e)
   }
