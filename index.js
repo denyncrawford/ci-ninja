@@ -50,7 +50,7 @@ app.post('/', async (req, res) => {
     console: false
   });
 
-  let executionLine = 'sh '
+  let executionLine = '';
 
   for await (const line of readInterface) {
     executionLine += line + ' && '
