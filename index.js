@@ -88,6 +88,7 @@ function myExec(line, cwd) {
   }
   const proc = exec(line, { cwd }, execCallback)
   proc.stdout.pipe(process.stdout)
+  proc.stderr.pipe(process.stdout)
 }
 
 function inAuthorizedSubnet(ip) {
