@@ -6,12 +6,13 @@ const bodyParser = require('body-parser')
 const Netmask = require('netmask').Netmask
 const fs = require('fs')
 const { join } = require('path')
+const readline = require('readline');
 
 app.set('port', 61439)
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.urlencoded({ extended: true }))
 
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
   const authorizedIps = [
     '127.0.0.1',
     'localhost'
@@ -39,14 +40,26 @@ app.post('/', (req, res) => {
     return
   }
   const scriptPath = `./scripts/${payload.repository.name}-main.sh`
-  const fullPath = `sh ${join(__dirname, scriptPath)}`
+  const fullPath = join(__dirname, scriptPath)
 
   if (!fs.existsSync(fullPath)) return res.status(404).end()
+
+  const readInterface = readline.createInterface({
+    input: fs.createReadStream(fullPath),
+    output: process.stdout,
+    console: false
+  });
+
+  let executionLine = 'sh '
+
+  for await (const line of readInterface) {
+    executionLine += line + ' &&'
+  }
 
   console.log(`Executing task at: ${scriptPath}`)
 
   try {
-    myExec(fullPath)
+    myExec(executionLine)
   } catch (e) {
     return res.status(500).send(e)
   }
@@ -61,7 +74,7 @@ http.createServer(app).listen(app.get('port'), function () {
 
 function myExec(line) {
   if (!fs.existsSync(line)) throw Error('This script doesn\'t exists')
-  
+
   const exec = require('child_process').exec
   const execCallback = (error) => {
     if (error !== null) {
