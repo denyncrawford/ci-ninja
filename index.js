@@ -6,12 +6,13 @@ const bodyParser = require('body-parser')
 const Netmask = require('netmask').Netmask
 const fs = require('fs')
 const { join } = require('path')
+const readline = require('readline')
 
 app.set('port', 61439)
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.urlencoded({ extended: true }))
 
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
   const authorizedIps = [
     '127.0.0.1',
     'localhost'
@@ -44,10 +45,24 @@ app.post('/', (req, res) => {
 
   if (!fs.existsSync(fullPath)) return res.status(404).end()
 
+  const fileStream = fs.createReadStream(fullPath);
+
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
+
+  let cwd = ''
+
+  for await (const line of rl) {
+    cwd = line.substring(1).replace(/ /g, '');
+    break;
+  }
+
   console.log(`Executing task at: ${scriptPath}`)
 
   try {
-    myExec(execLine)
+    myExec(execLine, cwd)
   } catch (e) {
     return res.status(500).send(e)
   }
@@ -60,14 +75,14 @@ http.createServer(app).listen(app.get('port'), function () {
   console.log('CI Ninja server listening on port ' + app.get('port'))
 })
 
-function myExec(line) {  
+function myExec(line, cwd) {
   const exec = require('child_process').exec
   const execCallback = (error) => {
     if (error !== null) {
       throw error
     }
   }
-  const proc = exec(line, execCallback)
+  const proc = exec(line, { cwd }, execCallback)
   proc.stdout.pipe(process.stdout)
 }
 
