@@ -53,10 +53,11 @@ app.post('/', async (req, res) => {
   let executionLine = 'sh '
 
   for await (const line of readInterface) {
-    executionLine += line + ' &&'
+    executionLine += line + ' && '
   }
 
   console.log(`Executing task at: ${scriptPath}`)
+  console.log(executionLine)
 
   try {
     myExec(executionLine)
