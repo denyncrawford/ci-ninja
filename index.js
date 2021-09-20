@@ -39,7 +39,7 @@ app.post('/', (req, res) => {
     return
   }
   const scriptPath = `./scripts/${payload.repository.name}-main.sh`
-  const fullPath = join(__dirname, scriptPath)
+  const fullPath = `. ${join(__dirname, scriptPath)}`
 
   if (!fs.existsSync(fullPath)) return res.status(404).end()
 
