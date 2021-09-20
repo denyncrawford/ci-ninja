@@ -46,7 +46,7 @@ app.post('/', (req, res) => {
   console.log(`Executing task at: ${scriptPath}`)
 
   try {
-    myExec(fullPath)
+    myExec(scriptPath)
   } catch (e) {
     return res.status(500).send(e)
   }
