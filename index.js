@@ -103,8 +103,7 @@ async function myExec(line, cwd, githubData) {
   proc.stdout.pipe(process.stdout);
   proc.stderr.pipe(process.stdout);
   const linesOfProc = readline.createInterface({
-    input: proc.stdout,
-    crlfDelay: Infinity,
+    input: proc.stdout
   });
   const { data } = await axios.get(`${url}/start`, {
     params: {
@@ -114,13 +113,9 @@ async function myExec(line, cwd, githubData) {
   const { logId } = data;
   console.log("Log ID:", logId);
   for await (const line of linesOfProc) {
-    try {
-      await axios.post(`${url}/log/${logId}`, {
-        line,
-      });
-    } catch (e) {
-      console.log(e);
-    }
+    await axios.post(`${url}/log/${logId}`, {
+      line,
+    });
   }
   await axios.post(`${url}/end/${logId}`, {
     user: githubData.user,
