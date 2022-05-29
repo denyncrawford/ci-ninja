@@ -10,7 +10,7 @@ const axios = require("axios");
 
 const url = "http://localhost:3002";
 
-app.set("port", 61439);
+app.set("port", 3001);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -35,7 +35,7 @@ app.post("/", async (req, res) => {
   }
 
   const ref = payload.ref;
-  const branch = ref.split("/")[2];
+  const branch = ref?.split("/")?.[2] || payload.repository.default_branch;
 
   const ipv4 = req.ip.replace("::ffff:", "");
   if (
@@ -49,32 +49,32 @@ app.post("/", async (req, res) => {
   }
   const scriptPath = `./scripts/${payload.repository.name}-${branch || 'main'}.sh`;
   const fullPath = join(__dirname, scriptPath);
-  const execLine = `. ${fullPath}`;
 
   if (!fs.existsSync(fullPath)) return res.status(404).end();
 
-  const fileStream = fs.createReadStream(fullPath);
+  // const fileStream = fs.createReadStream(fullPath);
 
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity,
-  });
+  // const rl = readline.createInterface({
+  //   input: fileStream,
+  //   crlfDelay: Infinity,
+  // });
 
-  let cwd = "";
-  let isSecondLine = false;
+  let cwd = __dirname;
 
-  for await (const line of rl) {
-    if (isSecondLine) {
-      cwd = line.substring(1).replace(/ /g, "");
-      break;
-    }
-    isSecondLine = true;
-  }
+  // let isSecondLine = false;
+
+  // for await (const line of rl) {
+  //   if (isSecondLine) {
+  //     cwd = line.substring(1).replace(/ /g, "");
+  //     break;
+  //   }
+  //   isSecondLine = true;
+  // }
 
   console.log(`Executing task at: ${scriptPath}`);
 
   try {
-    myExec(execLine, cwd, {
+    myExec(fullPath, cwd, {
       user: payload.sender.login,
       repository: payload.repository.name,
       url: payload.repository.svn_url
@@ -102,25 +102,30 @@ async function myExec(line, cwd, githubData) {
   const proc = exec(line, { cwd }, execCallback);
   proc.stdout.pipe(process.stdout);
   proc.stderr.pipe(process.stdout);
-  const linesOfProc = readline.createInterface({
-    input: proc.stdout
-  });
-  const { data } = await axios.get(`${url}/start`, {
-    params: {
-      logName: githubData.repository
-    }
-  });
-  const { logId } = data;
-  console.log("Log ID:", logId);
-  for await (const line of linesOfProc) {
-    await axios.post(`${url}/log/${logId}`, {
-      line,
+  try {
+    const linesOfProc = readline.createInterface({
+      input: proc.stdout
     });
+    const { data } = await axios.get(`${url}/start`, {
+      params: {
+        logName: githubData.repository
+      }
+    });
+    const { logId } = data;
+    console.log("Log ID:", logId);
+    for await (const line of linesOfProc) {
+      await axios.post(`${url}/log/${logId}`, {
+        line,
+      });
+    }
+    await axios.post(`${url}/end/${logId}`, {
+      user: githubData.user,
+      github: githubData.url,
+    });
+  } catch (e) {
+    console.log('No bot running at port 3002');
+    console.log('Aborting log report...');
   }
-  await axios.post(`${url}/end/${logId}`, {
-    user: githubData.user,
-    github: githubData.url,
-  });
 }
 
 function inAuthorizedSubnet(ip) {
